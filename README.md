@@ -6,19 +6,20 @@ These scripts are used to download the session files that were made available du
 
 For content just from 2024 in a custom directory (default is C:\Conferences\MMS\$conferenceyear), use the following:
 
-``` .\Get-MMSSessionContent.ps1 -DownloadLocation "C:\Temp\MMS" -ConferenceId 2025atmoa```
+```.\Get-MMSSessionContent.ps1 -DownloadLocation "C:\Temp\MMS" -ConferenceId 2025atmoa```
 
 For multiple years:
 
-``` .\Get-MMSSessionContent.ps1 -ConferenceList @('2015','2025atmoa')```
+```.\Get-MMSSessionContent.ps1 -ConferenceList @('2015','2025atmoa')```
 
 To exclude session details:
 
-``` .\Get-MMSSessionContent.ps1 -All -ExcludeSessionDetails```
+```.\Get-MMSSessionContent.ps1 -All -ExcludeSessionDetails```
 
 ## Acknowledgements
 
 Thank you to:
+
 - [Duncan Russell](http://www.sysadmintechnotes.com/) for providing the initial script for MMS 2014 and helping me test the changes I made for it to work with the more recent conferences.
 - [Evan Yeung](https://github.com/forevanyeung) for cleaning up processing and file naming.
 - [Chris Kibble](https://www.christopherkibble.com) for continued testing and improvements made to the script.

@@ -48,6 +48,7 @@
                                                        Could be improved with exponential backoff, but this is a start - also 20 seconds seemed to work best (15 almost worked)
     10/13/2025    1.7.2      Andrew Johnson            Updated and tested to include 2025 Music City Edition
     10/22/2025    1.7.3      Nathan Ziehnert           Fixes credential prompt issue when launching PowerShell in certain ways on Windows                                                       
+    6/6/2025      1.7.4      Jorge Suarez              Added support for 2026 at MOA and hosted-files.sched.co session file downloads
 
 .EXAMPLE
   .\Get-MMSSessionContent.ps1 -ConferenceList @('2025atmoa','2025music');
@@ -76,7 +77,7 @@
 Param(
   [Parameter(Mandatory = $false)][string]$DownloadLocation = "C:\Conferences\MMS", # could validate this: [ValidateScript({(Test-Path -Path (Split-Path $PSItem))})]
   [Parameter(Mandatory = $true, ParameterSetName = 'SingleEvent')]
-  [ValidateSet("2015", "2016", "2017", "2018", "de2018", "2019", "jazz", "miami", "2022atmoa", "2023atmoa", "2023miami", "2024atmoa", "2024fll", "2025atmoa", "2025music")]
+  [ValidateSet("2015", "2016", "2017", "2018", "de2018", "2019", "jazz", "miami", "2022atmoa", "2023atmoa", "2023miami", "2024atmoa", "2024fll", "2025atmoa", "2025music","2026atmoa")]
   [string]$ConferenceId,
   [Parameter(Mandatory = $true, ParameterSetName = 'MultipleEvents', HelpMessage = "This needs to bwe a list or array of conference ids/years!")]
   [System.Collections.Generic.List[string]]$ConferenceList,
@@ -118,6 +119,31 @@ function Invoke-BasicHTMLParser ($html) {
   
   return $html
 }
+
+function Test-MMSDownloadLink {
+  param(
+    [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Href
+  )
+
+  return $Href -match '(?i)(hosted_files|hosted-files\.sched\.co)'
+}
+
+function Get-MMSDownloadFileName {
+  param(
+    [Parameter(Mandatory = $true)][string]$Href
+  )
+
+  $hrefWithoutQuery = ($Href -split '\?', 2)[0]
+  $filename = Split-Path $hrefWithoutQuery -Leaf
+
+  # Replace HTTP Encoding Characters (e.g. %20) with the proper equivalent.
+  $filename = [System.Web.HttpUtility]::UrlDecode($filename)
+  # Replace non-standard characters
+  $filename = $filename -replace "[^A-Za-z0-9\.\-_ ]", ""
+
+  return $filename
+}
+
 ## Hide Invoke-WebRequest progress bar. There's a bug that doesn't clear the bar after a request is finished. 
 $ProgressPreference = "SilentlyContinue"
 ## Determine OS... sorta
@@ -132,7 +158,7 @@ $DownloadLocation = $DownloadLocation.Trim('\')
 
 ## Setup
 $PublicContentYears = @('2015', '2016', '2017', '2019', 'jazz', 'miami', '2022atmoa', '2023atmoa','2023miami', '2024atmoa', '2024fll')
-$PrivateContentYears = @('2018', 'de2018', '2025atmoa', '2025music')
+$PrivateContentYears = @('2018', 'de2018', '2025atmoa', '2025music','2026atmoa')
 $ConferenceYears = New-Object -TypeName System.Collections.Generic.List[string]
 [int]$PublicYearsCount = $PublicContentYears.Count
 [int]$PrivateYearsCount = $PrivateContentYears.Count
@@ -274,13 +300,9 @@ $ConferenceYears | ForEach-Object -Process {
         Out-File -FilePath "$downloadPath\Session Info.txt" -InputObject $sessionInfoText -Force -Encoding default
       }
 
-      $downloads = $links[($linkIndex + 1)..($nextLinkIndex - 1)] | Where-Object { $_.href -like "*hosted_files*" } #prefilter
+      $downloads = $links[($linkIndex + 1)..($nextLinkIndex - 1)] | Where-Object { Test-MMSDownloadLink -Href $_.href } #prefilter
       foreach ($download in $downloads) {
-        $filename = Split-Path $download.href -Leaf
-        # Replace HTTP Encoding Characters (e.g. %20) with the proper equivalent.
-        $filename = [System.Web.HttpUtility]::UrlDecode($filename)
-        # Replace non-standard characters
-        $filename = $filename -replace "[^A-Za-z0-9\.\-_ ]", ""
+        $filename = Get-MMSDownloadFileName -Href $download.href
 
         $outputFilePath = $downloadPath + '\' + $filename
 
